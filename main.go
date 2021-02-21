@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -353,6 +355,7 @@ func grafo() {
 				listaAc := Linealizacion[indiceT]
 				if listaAc.size != 0 {
 					nodG := listaAc.graphNodos(k)
+					txtdot += nodG
 				}
 			}
 			rank += "}\n"
@@ -366,6 +369,16 @@ func grafo() {
 
 		}
 	}
+	dots := 0
+	fmt.Println(txtdot)
+	err := ioutil.WriteFile("Tiendas"+strconv.Itoa(dots+1)+".dot", []byte(txtdot), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ruta, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(ruta, "-Tpng", "./Tiendas"+strconv.Itoa(dots+1)+".dot").Output()
+	mode := int(0777)
+	ioutil.WriteFile("Tiendas"+strconv.Itoa(dots+1)+".png", cmd, os.FileMode(mode))
 
 }
 
@@ -386,7 +399,10 @@ func (l *ListaD) graphNodos(n int) string {
 			}
 			nodoA = nodoA.siguiente
 		}
+		txt += uni + "\n"
+		return txt
 	}
+	return txt
 }
 
 func indexR(w http.ResponseWriter, r *http.Request) {
