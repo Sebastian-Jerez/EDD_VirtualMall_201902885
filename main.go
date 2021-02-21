@@ -57,8 +57,21 @@ func (list *ListaD) agregarTienda(store Tienda) {
 		ultimo.siguiente = newNodo
 		ultimo.siguiente.anterior = ultimo
 		list.fin = newNodo
-		list.size++s
+		list.size++
 	}
+}
+
+//Funcion para buscar y eliminar
+func (l *ListaD) buscarYEN(name string) *Nodo {
+	encontrado := false
+	var ret *Nodo = nil
+	for n := l.primero(); n != nil && !encontrado; n = n.sig() {
+		if n.tienda.Nombre == name {
+			encontrado = true
+			ret = n
+		}
+	}
+	return ret
 }
 
 //Funcion para buscar nodo
@@ -74,17 +87,38 @@ func buscarN(name string, l *ListaD) *Nodo {
 	return ret
 }
 
+//
 func paso(l *ListaD) {
 	newN := l.inicio
 
-	for newN.siguiente != nil {
-		i := 0
+	for i := 0; i < l.size; i++ {
 		ListaTT = append(ListaTT, newN.tienda)
 		newN = newN.siguiente
-		fmt.Println(i)
-		i++
 	}
 	fmt.Println(ListaTT)
+}
+func EliminarNodo(nombre string, l *ListaD) {
+
+	nodoD := l.buscarYEN(nombre)
+	if nodoD != nil {
+		fmt.Println("NEtra para eliminar")
+		if nodoD == l.inicio {
+			l.inicio = nodoD.siguiente
+			l.size--
+		} else if nodoD == l.fin {
+			l.fin = nodoD.anterior
+			l.size--
+		} else {
+			nodoAnt := nodoD.anterior
+			nodoSig := nodoD.siguiente
+			// Remover el nodo
+			nodoAnt.siguiente = nodoD.siguiente
+			nodoSig.anterior = nodoD.anterior
+			fmt.Println("Termina de eliminar")
+			l.size--
+		}
+
+	}
 }
 
 //Structs para lectura de JSON--------------------------------
@@ -109,9 +143,17 @@ type Tienda struct {
 	Calificacion int    `json:"Calificacion"`
 }
 
+//paramentros de busquea para buscar
 type SearchShop struct {
 	Departamento string `json:"Departamento"`
 	Nombre       string `json:"Nombre"`
+	Calificacion int    `json:"Calificacion"`
+}
+
+//paramaetros para eliminar tienda
+type DeleteShop struct {
+	Nombre       string `json:"Nombre"`
+	Categoria    string `json:"Categoria"`
 	Calificacion int    `json:"Calificacion"`
 }
 
@@ -262,7 +304,7 @@ func deleteTienda(w http.ResponseWriter, r *http.Request) {
 }
 
 func BusquedaRL(w http.ResponseWriter, r *http.Request) {
-
+	ListaTT = nil
 	vars := mux.Vars(r)
 	idTienda, err := strconv.Atoi(vars["num"])
 
@@ -307,29 +349,19 @@ func grafo() {
 			for k := 0; i < 5; k++ {
 				txtdot += "nodo" + strconv.Itoa(k) + `[label="` + indices[i] + "|" + departamentos[j] + "| Posicion:" + strconv.Itoa(k+1) + `"]` + "\n"
 				rank += "nodo" + strconv.Itoa(k) + ";"
-
+				indiceT := ((i*len(departamentos)+j)*5 + (k))
+				listaAc := Linealizacion[indiceT]
+				if listaAc.size != 0 {
+					nodG := listaAc.graphNodos(k)
+				}
 			}
 			rank += "}\n"
 			txtdot += rank
 			rank = "{rank=same;"
 
-			//indiceAc := indices[i]
-			//departoAc := departamentos[j]
-
 			//Crear conexiones entre nodos
 			for k := 0; k < 4; k++ {
 				txtdot += "nodo" + strconv.Itoa(k) + "->nodo" + strconv.Itoa(k+1) + "\n"
-			}
-
-			for i := 0; i < len(Linealizacion); i++ {
-				//fmt.Println(i)
-				nodo := Linealizacion[i].inicio
-				if nodo != nil {
-					cal := nodo.tienda.Calificacion
-					tnd := Linealizacion[i]
-					tnd.graphNodos(cal)
-
-				}
 			}
 
 		}
@@ -338,28 +370,61 @@ func grafo() {
 }
 
 func (l *ListaD) graphNodos(n int) string {
-	inicio := l.inicio
-	nodos := "nodo" + strconv.Itoa(n) + "->"
-	datos := ""
-	if inicio != nil {
-		for inicio != nil {
-			datos += inicio.tienda.Nombre + `[label="` + inicio.tienda.Nombre + "|" + inicio.tienda.Contacto + "|" + strconv.Itoa(inicio.tienda.Calificacion) + `"]` + "\n"
-			if inicio.siguiente != nil {
-				nodos += inicio.tienda.Nombre + "->" + inicio.siguiente.tienda.Nombre
+	nodoA := l.inicio
+	txt := ""
+	uni := "nodo" + strconv.Itoa(n) + "->"
+
+	//crear nodos de las tienda en lista
+	if nodoA != nil {
+		for nodoA != nil {
+			txt += nodoA.tienda.Nombre + `[label="` + nodoA.tienda.Nombre + "|" + nodoA.tienda.Contacto + "|" + strconv.Itoa(nodoA.tienda.Calificacion) + `"]` + "\n"
+			if nodoA.siguiente != nil {
+				uni += nodoA.tienda.Nombre + "->" + nodoA.siguiente.tienda.Nombre
 			}
 			if l.inicio == l.fin {
-				nodos += inicio.tienda.Nombre
+				uni += nodoA.tienda.Nombre
 			}
-			inicio = inicio.siguiente
+			nodoA = nodoA.siguiente
 		}
-		datos += nodos + "\n"
-		return datos
 	}
-	return datos
 }
 
 func indexR(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Servidor en funcionamiento")
+}
+
+func eliminarTienda(w http.ResponseWriter, r *http.Request) {
+	var paramDel DeleteShop
+	reqBody, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		fmt.Fprintf(w, "Inserte datos validos")
+	}
+
+	json.Unmarshal(reqBody, &paramDel)
+
+	val := len(Linealizacion)
+	fmt.Println(val)
+	for i := 0; i < val; i++ {
+		nodo := Linealizacion[i].inicio
+		fmt.Println(i)
+		if nodo != nil {
+			fmt.Println("Entro a listaD")
+			td := Linealizacion[i]
+			fmt.Println("pasa linea")
+
+			fmt.Println("casi llega delete")
+			//Eliminar nodo
+			EliminarNodo(paramDel.Nombre, &td)
+			fmt.Println("pasa delete")
+
+			//Salida
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(paramDel)
+		}
+	}
+
 }
 
 func main() {
@@ -373,6 +438,7 @@ func main() {
 	router.HandleFunc("/TiendaEspecifica", BusquedaPE).Methods("POST")
 	router.HandleFunc("/tiendas/{nombre}", searchtienda).Methods("GET")
 	router.HandleFunc("/id/{num}", BusquedaRL).Methods("GET")
+	router.HandleFunc("/Eliminar", eliminarTienda).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":3000", router))
 }
