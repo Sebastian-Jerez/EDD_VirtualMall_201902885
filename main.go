@@ -143,6 +143,43 @@ type Tienda struct {
 	Descripcion  string `json:"Descripcion"`
 	Contacto     string `json:"Contacto"`
 	Calificacion int    `json:"Calificacion"`
+	Logo         string `json:"Logo"`
+}
+
+type Pedidos struct {
+	Compras []Compras `json:"Pedidos"`
+}
+
+type Compras struct {
+	Fecha        string            `json:"Fecha"`
+	Tienda       string            `json:"Tienda"`
+	Departamento string            `json:"Departamento"`
+	Calificacion int               `json:"Calificacion"`
+	ProductosP   []ProductoPedidos `json:"Productos"`
+}
+
+type ProductoPedidos struct {
+	Codigo int `json:"Codigo"`
+}
+
+type Inventarios struct {
+	Inverntarios []Inverntario `json:"Invetarios"`
+}
+
+type Inverntario struct {
+	Tienda       string                `json:"Tienda"`
+	Departamento string                `json:"Departamento"`
+	Calificacion int                   `json:"Calificacion"`
+	ProductosI   []ProductosInventario `json:"Productos"`
+}
+
+type ProductosInventario struct {
+	Nombre      string `json:"Nombre"`
+	Codigo      int    `json:"Codigo"`
+	Descripcion string `json:"Descripcion"`
+	Precio      int    `json:"Precio"`
+	Cantidad    int    `json:"Cantidad"`
+	Imagen      string `json:"Imagen"`
 }
 
 //paramentros de busquea para buscar
@@ -157,6 +194,199 @@ type DeleteShop struct {
 	Nombre       string `json:"Nombre"`
 	Categoria    string `json:"Categoria"`
 	Calificacion int    `json:"Calificacion"`
+}
+
+//------------Estructuras para arbol AVL----------------------
+
+//Nodos
+type NodoAVL struct {
+	Produ     ProductosInventario
+	Izquierda *NodoAVL
+	Derecha   *NodoAVL
+	Balance   int
+}
+
+//Funcion para crear un nuevo nodo
+func NewNodo(producto ProductosInventario) *NodoAVL {
+	return &NodoAVL{producto, nil, nil, 0}
+}
+
+//Constantes para armar el AVL
+const (
+	Left_Heavy  = -1
+	Balanced    = 0
+	Right_Heavy = 1
+)
+
+//Arbol AVL
+type Arbol struct {
+	RaizAVL *NodoAVL
+}
+
+//Funcion para crer un nuevo arbol
+func NewArbol() *Arbol {
+	return &Arbol{nil}
+}
+
+//agregar un nuevo arbol
+func ingresarA(arbol *Arbol, producto ProductosInventario) bool {
+	increase := false
+
+	return inseterarN(&arbol.RaizAVL, producto, &increase)
+}
+
+//Insertar un nuevoo nodo al arbol
+func inseterarN(nodo **NodoAVL, producto ProductosInventario, increase *bool) bool {
+	if *nodo == nil {
+		*nodo = NewNodo(producto)
+		*increase = true
+		return true
+	} else if (*nodo).Produ.Cantidad > producto.Cantidad {
+
+		returnvalue := inseterarN(&(*nodo).Izquierda, producto, increase)
+
+		if *increase {
+
+			switch (*nodo).Balance {
+			case Balanced:
+				(*nodo).Balance = Left_Heavy
+			case Right_Heavy:
+				(*nodo).Balance = Balanced
+				*increase = false
+				break
+			case Left_Heavy:
+				RebalanceLeft(&*nodo)
+				*increase = false
+				break
+			}
+		}
+
+		return returnvalue
+
+	} else if (*nodo).Produ.Cantidad < producto.Cantidad {
+		returnvalue2 := inseterarN(&(*nodo).Derecha, producto, increase)
+
+		if *increase {
+			switch (*nodo).Balance {
+			case Balanced:
+				(*nodo).Balance = Right_Heavy
+			case Left_Heavy:
+				(*nodo).Balance = Balanced
+				*increase = false
+				break
+			case Right_Heavy:
+
+			}
+		}
+		return returnvalue2
+	}
+
+	return false
+}
+
+//---------------Funciones de balanceo de Arbol AVL---------------------
+//Funcion de balanceo por la izquierda Arbol AVL
+func RebalanceLeft(raizL **NodoAVL) {
+	hijoIz := (*raizL).Izquierda
+
+	if hijoIz.Balance == Right_Heavy {
+		hijoIzDer := hijoIz.Derecha
+
+		if hijoIzDer.Balance == Left_Heavy {
+			hijoIz.Balance = Balanced
+			hijoIzDer.Balance = Balanced
+			(*raizL).Balance = Right_Heavy
+		} else if hijoIzDer.Balance == Balanced {
+			hijoIz.Balance = Balanced
+			hijoIzDer.Balance = Balanced
+			(*raizL).Balance = Balanced
+		} else {
+			hijoIz.Balance = Left_Heavy
+			hijoIzDer.Balance = Balanced
+			(*raizL).Balance = Balanced
+		}
+
+		RotacionIzquierda(&(*raizL).Izquierda)
+	} else {
+		hijoIz.Balance = Balanced
+		(*raizL).Balance = Balanced
+	}
+
+	RotacionDerecha(&*raizL)
+}
+
+//Funcion de balanceo por la derecha
+func RebalanceRight(raizR **NodoAVL) {
+	hijoDer := (*raizR).Derecha
+
+	if hijoDer.Balance == Left_Heavy {
+		hijoDerIz := hijoDer.Izquierda
+
+		if hijoDerIz.Balance == Right_Heavy {
+			hijoDer.Balance = Balanced
+			hijoDerIz.Balance = Balanced
+			(*raizR).Balance = Left_Heavy
+		} else if hijoDerIz.Balance == Balanced {
+			hijoDer.Balance = Balanced
+			hijoDerIz.Balance = Balanced
+			(*raizR).Balance = Balanced
+		} else {
+			hijoDer.Balance = Right_Heavy
+			hijoDerIz.Balance = Balanced
+			(*raizR).Balance = Balanced
+		}
+		RotacionDerecha(&(*raizR).Derecha)
+	} else {
+		hijoDer.Balance = Balanced
+		(*raizR).Balance = Balanced
+	}
+
+	RotacionIzquierda(&*raizR)
+}
+
+//---------------------Funciones de rotacion------------------------
+//Funcion de rotacion por la derecha
+func RotacionDerecha(raizA **NodoAVL) {
+	tmp := (*raizA).Izquierda
+	(*raizA).Izquierda = tmp.Derecha
+	tmp.Derecha = *raizA
+	*raizA = tmp
+}
+
+//Funcion para rotacion por la izquierda
+func RotacionIzquierda(raizA **NodoAVL) {
+	tmp := (*raizA).Derecha
+	(*raizA).Derecha = tmp.Izquierda
+	tmp.Izquierda = *raizA
+	*raizA = tmp
+}
+
+//-----------------Reportes del proyecto--------------------------------
+//Grafo del arbol AVL
+func GrafoAVL(arbol *Arbol) {
+	inicioDot := "digraph G{\nnode [shape=circle];\n"
+
+	dot := ""
+
+	if arbol.RaizAVL != nil {
+		RecorrerArbol(&arbol.RaizAVL, &dot)
+	}
+
+	inicioDot += dot + "\n}\n"
+
+	path := "grafoAVL.dot"
+
+	var _, err = os.Stat(path)
+
+	if os.IsNotExist(err) {
+		var file, err = os.Create(path)
+		if os.IsExist(err) {
+			return
+		}
+
+		defer file.Close()
+		fmt.Println("Archivo creado con exito")
+	}
 }
 
 //vector de indices
@@ -368,17 +598,20 @@ func grafo() {
 			}
 
 		}
+		txtdot = "digraph G { \nnode[shape=record]\n" + `graph[splines="ortho"]` + "\n"
+		rank = "{rank=same;"
+
+		dots := 0
+		fmt.Println(txtdot)
+		err := ioutil.WriteFile("Grafo"+strconv.Itoa(dots+1)+".dot", []byte(txtdot), 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ruta, _ := exec.LookPath("dot")
+		cmd, _ := exec.Command(ruta, "-Tpng", "./Tiendas"+strconv.Itoa(dots+1)+".dot").Output()
+		mode := int(0777)
+		ioutil.WriteFile("Grafo"+strconv.Itoa(dots+1)+".png", cmd, os.FileMode(mode))
 	}
-	dots := 0
-	fmt.Println(txtdot)
-	err := ioutil.WriteFile("Tiendas"+strconv.Itoa(dots+1)+".dot", []byte(txtdot), 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ruta, _ := exec.LookPath("dot")
-	cmd, _ := exec.Command(ruta, "-Tpng", "./Tiendas"+strconv.Itoa(dots+1)+".dot").Output()
-	mode := int(0777)
-	ioutil.WriteFile("Tiendas"+strconv.Itoa(dots+1)+".png", cmd, os.FileMode(mode))
 
 }
 
@@ -455,6 +688,7 @@ func main() {
 	router.HandleFunc("/tiendas/{nombre}", searchtienda).Methods("GET")
 	router.HandleFunc("/id/{num}", BusquedaRL).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminarTienda).Methods("POST")
+	//router.HandleFunc("/getArreglo", grafo).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":3000", router))
 }
