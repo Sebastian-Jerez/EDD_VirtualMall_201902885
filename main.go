@@ -415,7 +415,8 @@ func GrafoAVL(arbol *Arbol) {
 //Recorrido del arbol
 func RecorrerArbol(actual **NodoAVL, dot *string) {
 	if *actual != nil {
-		*dot += "\"" + fmt.Sprint(&(*actual)) + "\"[label = \"" + strconv.Itoa(*&actual.Produ.Codigo) + ""
+		codigo := *&actual.Produ.Cantidad
+		*dot += "\"" + fmt.Sprint(&(*actual)) + "\"[label = \"" + strconv.Itoa(codigo) + "\"]"
 	}
 }
 
