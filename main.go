@@ -380,13 +380,48 @@ func GrafoAVL(arbol *Arbol) {
 
 	if os.IsNotExist(err) {
 		var file, err = os.Create(path)
-		if os.IsExist(err) {
+		if ExisteError(err) {
 			return
 		}
 
 		defer file.Close()
 		fmt.Println("Archivo creado con exito")
 	}
+
+	var file, err2 = os.OpenFile(path, os.O_RDWR, 0644)
+	if ExisteError(err2) {
+		return
+	}
+
+	defer file.Close()
+
+	_, err = file.WriteString(inicioDot)
+	if ExisteError(err) {
+		return
+	}
+
+	err = file.Sync()
+	if ExisteError(err) {
+		return
+	}
+
+	fmt.Println("Archivo actualizado")
+	path2, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path2, "-Tpng", "grafoAVL.dot").Output()
+	mode := int(0777)
+	ioutil.WriteFile("grafoAVL.png", cmd, os.FileMode(mode))
+}
+
+//Recorrido del arbol
+func RecorrerArbol(actual **NodoAVL, dot *string) {
+	if *actual != nil {
+		*dot += "\"" + fmt.Sprint(&(*actual)) + "\"[label = \"" + strconv.Itoa(*&actual.Produ.Codigo) + ""
+	}
+}
+
+//Reconicimeinto de error para grafos
+func ExsisteError() {
+	fmt.Println("hola")
 }
 
 //vector de indices
